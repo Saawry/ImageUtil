@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SampleImageUtil"
 include(":app")
- 
+include(":ImageCropperModule")
