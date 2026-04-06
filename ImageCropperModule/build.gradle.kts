@@ -1,17 +1,18 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
+    id("maven-publish")
     alias(libs.plugins.kotlin.parcelize)
 }
 
 android {
 
     namespace = "com.gadware.android.cropimage"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 21
-        
+        version = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -20,6 +21,11 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
         }
     }
     compileOptions {
@@ -48,4 +54,17 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.github.Saawry"
+            artifactId = "ImageUtil"
+            version = "1.0.0"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
