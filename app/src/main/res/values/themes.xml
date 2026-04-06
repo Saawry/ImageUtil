@@ -6,4 +6,10 @@
     </style>
 
     <style name="Theme.SampleImageUtil" parent="Base.Theme.SampleImageUtil" />
+    <!-- Dedicated theme for CropImageActivity to ensure ActionBar is present for menus -->
+    <style name="Theme.CropImage.Activity" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/purpleDark</item>
+        <item name="colorPrimaryDark">@color/purpleDark</item>
+        <item name="colorAccent">@color/orange</item>
+    </style>
 </resources>
