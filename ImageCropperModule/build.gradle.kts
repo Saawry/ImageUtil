@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         minSdk = 21
-        version = "1.0.0"
+        version = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -60,7 +60,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.github.Saawry"
             artifactId = "ImageUtil"
-            version = "1.0.0"
+            version = "1.1.0"
 
             afterEvaluate {
                 from(components["release"])
