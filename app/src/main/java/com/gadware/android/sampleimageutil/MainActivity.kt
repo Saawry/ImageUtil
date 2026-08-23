@@ -10,17 +10,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.gadware.android.cropimage.CropImage
 import com.gadware.android.cropimage.CropImageActivity
 import com.gadware.android.cropimage.CropImageOptions
-import com.gadware.android.cropimage.permission.PermissionGroup
-import com.gadware.android.cropimage.permission.openAppSettings
-import com.gadware.android.cropimage.permission.registerPermissionHelper
+import com.gadware.android.cropimage.SampleCustomActivity
 import com.gadware.android.cropimage.parcelable
 import com.gadware.android.sampleimageutil.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-
-    // Universal lifecycle-safe permission helper
-    private val permissionHelper = registerPermissionHelper()
 
     private val cropImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -31,8 +26,11 @@ class MainActivity : AppCompatActivity() {
             }
         } else if (result.resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
             val cropResult = result.data?.parcelable<CropImage.ActivityResult>(CropImage.CROP_IMAGE_EXTRA_RESULT)
-            // Handle error: cropResult?.error
-            Toast.makeText(this, "Error: " + cropResult?.error, Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                getString(R.string.error_prefix) + cropResult?.error,
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -42,34 +40,25 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.button.setOnClickListener {
-            askPermissions()
+
+        // The image cropper internally handles all required permissions (Camera / Gallery / Media)
+        binding.btnBasicCrop.setOnClickListener {
+            startImageCropper(isAdvanced = false)
+        }
+
+        binding.btnAdvanceCrop.setOnClickListener {
+            startImageCropper(isAdvanced = true)
         }
     }
 
-    private fun askPermissions() {
-        // Request ImagePicker group (automatically handles Android 13/14+ vs older Android versions)
-        permissionHelper.request(PermissionGroup.ImagePicker(includeCamera = true)) { result ->
-            result
-                .ifAllGranted {
-                    startImageCropper()
-                }
-                .ifPermanentlyDenied { permanentlyDenied, _, _ ->
-                    Toast.makeText(
-                        this,
-                        "Permissions permanently denied: $permanentlyDenied. Please enable them in settings.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    openAppSettings()
-                }
-                .ifDenied { denied, _ ->
-                    Toast.makeText(this, "Permissions denied: $denied", Toast.LENGTH_SHORT).show()
-                }
+    private fun startImageCropper(isAdvanced: Boolean) {
+        val targetClass = if (isAdvanced) {
+            SampleCustomActivity::class.java
+        } else {
+            CropImageActivity::class.java
         }
-    }
 
-    private fun startImageCropper() {
-        val intent = Intent(this, CropImageActivity::class.java)
+        val intent = Intent(this, targetClass)
         val bundle = Bundle()
 
         // Configure cropping options
@@ -84,15 +73,15 @@ class MainActivity : AppCompatActivity() {
             fixAspectRatio = true,
 
             // Customize UI elements
-            activityTitle = "Crop Image",
-            cropMenuCropButtonTitle = "Done",
+            activityTitle = if (isAdvanced) getString(R.string.advance_cropper) else getString(R.string.basic_cropper),
+            cropMenuCropButtonTitle = getString(R.string.done),
             activityMenuIconColor = Color.WHITE,
             toolbarColor = Color.BLACK,
             toolbarTitleColor = Color.WHITE,
             toolbarBackButtonColor = Color.WHITE,
 
             // Image source options
-            showIntentChooser = true, // Show a chooser dialog for camera/gallery
+            showIntentChooser = true,
             imageSourceIncludeCamera = true,
             imageSourceIncludeGallery = true
         )

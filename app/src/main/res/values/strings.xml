@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">SampleImageUtil</string>
+    <string name="basic_cropper">Basic Cropper</string>
+    <string name="advance_cropper">Advance Cropper</string>
+    <string name="cropped_result_preview">Cropped result preview</string>
+    <string name="done">Done</string>
+    <string name="error_prefix">Error: </string>
+    <string name="permissions_permanently_denied">Permissions permanently denied: %1$s. Please enable them in settings.</string>
+    <string name="permissions_denied">Permissions denied: %1$s</string>
 </resources>
