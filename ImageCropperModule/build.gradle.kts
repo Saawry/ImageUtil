@@ -9,14 +9,12 @@ plugins {
 android {
     namespace = "com.gadware.android.cropimage"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     defaultConfig {
-        minSdk = 21
-        version = "1.2.0"
+        minSdk = 24
+        version = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
         vectorDrawables.useSupportLibrary = true
@@ -68,7 +66,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.github.Saawry"
             artifactId = "ImageUtil"
-            version = "1.2.0"
+            version = "1.3.0"
 
             afterEvaluate {
                 from(components["release"])

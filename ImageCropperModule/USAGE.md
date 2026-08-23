@@ -236,24 +236,62 @@ class MyActivity : AppCompatActivity() {
 
 ## 4. Image Conversion & Compression Utilities
 
-### 4.1. Format Conversions (`ImageHelper`)
+### 4.1. Universal Image to ByteArray & Format Conversions (`ImageHelper`)
+
+`ImageHelper.toByteArray` is a universal conversion function supporting **`Bitmap`** or **`Uri`** inputs with optional parameters for **dimensions**, **format**, and **compression ratio**:
+
+* **Dimensions (`width`, `height`)**:
+  * If both are omitted: Defaults to **`200px * 200px`**.
+  * If only one is provided (e.g., `width = 50`): The dimension defaults to a square **`50px * 50px`**.
+  * If both are provided (e.g., `width = 300, height = 400`): Scaled to **`300px * 400px`**.
+* **Format (`format`)**: Defaults to **`Bitmap.CompressFormat.PNG`** (also supports `JPEG`, `WEBP`, etc.).
+* **Compression Ratio / Quality (`ratio`)**: Defaults to **`50`** (integer range `0..100`).
 
 ```kotlin
+import android.graphics.Bitmap.CompressFormat
 import com.gadware.android.cropimage.ImageHelper
 
-// 1. Convert Bitmap to ByteArray
-val byteArray: ByteArray? = ImageHelper.toByteArray(bitmap)
+// 1. Universal converter from Bitmap (defaults: 200x200, PNG, ratio 50)
+val bytesDefault: ByteArray? = ImageHelper.toByteArray(bitmap)
 
-// 2. Convert ByteArray to Bitmap
-val bitmap: Bitmap = ImageHelper.toBitmap(byteArray!!)
+// 2. Single dimension passed (e.g. 50 -> 50px * 50px, PNG, ratio 50)
+val bytesSquare: ByteArray? = ImageHelper.toByteArray(
+    bitmap = bitmap,
+    width = 50 // or height = 50
+)
 
-// 3. Read Uri directly to ByteArray
-val uriBytes: ByteArray = ImageHelper.convertImageUriToByteArray(context, imageUri)
+// 3. Custom dimensions, JPEG format, and custom compression ratio
+val bytesCustom: ByteArray? = ImageHelper.toByteArray(
+    bitmap = bitmap,
+    width = 300,
+    height = 400,
+    format = CompressFormat.JPEG,
+    ratio = 80
+)
 
-// 4. Downscale Bitmap proportionally (max 300px bound maintaining aspect ratio)
+// 4. Universal converter from Uri (memory-safe sampled decoding)
+val bytesFromUri: ByteArray? = ImageHelper.toByteArray(
+    context = context,
+    uri = imageUri,
+    width = 100, // becomes 100x100
+    format = CompressFormat.PNG,
+    ratio = 50
+)
+
+// 5. Universal entry point for either Bitmap or Uri
+val bytesUniversal: ByteArray? = ImageHelper.toByteArrayUniversal(
+    image = imageUri, // or bitmap
+    context = context,
+    width = 50
+)
+
+// 6. Convert ByteArray back to Bitmap
+val bitmap: Bitmap = ImageHelper.toBitmap(bytesDefault!!)
+
+// 7. Downscale Bitmap proportionally (max 300px bound maintaining aspect ratio)
 val scaledBitmap: Bitmap = ImageHelper.getMaxSizeBitmap(bitmap)
 
-// 5. Render any Android View to a Bitmap
+// 8. Render any Android View to a Bitmap
 val viewBitmap: Bitmap = ImageHelper.loadBitmapFromView(view, view.width, view.height)
 ```
 

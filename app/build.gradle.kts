@@ -6,17 +6,15 @@ plugins {
 android {
     namespace = "com.gadware.android.sampleimageutil"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     defaultConfig {
         applicationId = "com.gadware.android.sampleimageutil"
-        minSdk = 26
-        targetSdk = 36
-        versionCode = 2
-        versionName = "1.2.0"
+        minSdk = 24
+        targetSdk = 37
+        versionCode = 3
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
