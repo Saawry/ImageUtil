@@ -17,6 +17,11 @@
 
         <activity
             android:name=".CropImageActivity"
+            android:theme="@style/Theme.CropImage.Activity"
+            android:exported="true"/>
+        <activity
+            android:name=".SampleCustomActivity"
+            android:theme="@style/Theme.CropImage.Activity"
             android:exported="true"/>
 
         <provider
