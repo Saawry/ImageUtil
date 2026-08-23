@@ -169,6 +169,42 @@ object ImageHelper {
     }
 
     /**
+     * Compresses and saves the provided [Bitmap] to a file [Uri].
+     * If [destinationUri] is null, a temporary cache Uri is automatically generated.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun writeBitmapToUri(
+        context: Context,
+        bitmap: Bitmap,
+        destinationUri: Uri? = null,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
+        quality: Int = 85
+    ): Uri {
+        return BitmapUtils.writeBitmapToUri(
+            context = context,
+            bitmap = bitmap,
+            compressFormat = format,
+            compressQuality = quality,
+            customOutputUri = destinationUri
+        )
+    }
+
+    /**
+     * Efficiently decodes a sampled [Bitmap] from a [Uri] using inSampleSize calculation to prevent OOM errors.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun decodeSampledBitmap(
+        context: Context,
+        uri: Uri,
+        reqWidth: Int = 200,
+        reqHeight: Int = 200
+    ): Bitmap? {
+        return decodeSampledBitmapFromUri(context, uri, reqWidth, reqHeight)
+    }
+
+    /**
      * Resolves target dimensions according to the rules:
      * - If both width and height are provided, returns (width, height)
      * - If only width is provided (e.g. 50), dimension is 50px x 50px

@@ -295,23 +295,23 @@ val scaledBitmap: Bitmap = ImageHelper.getMaxSizeBitmap(bitmap)
 val viewBitmap: Bitmap = ImageHelper.loadBitmapFromView(view, view.width, view.height)
 ```
 
-### 4.2. Compression & Large Image Decoding (`BitmapUtils`)
+### 4.2. Compression & Large Image Decoding (`ImageHelper`)
 
 ```kotlin
 import android.graphics.Bitmap.CompressFormat
-import com.gadware.android.cropimage.BitmapUtils
+import com.gadware.android.cropimage.ImageHelper
 
 // Compress and save Bitmap to file Uri with format and quality (0..100)
-BitmapUtils.writeBitmapToUri(
+val savedUri: Uri = ImageHelper.writeBitmapToUri(
     context = context,
     bitmap = bitmap,
-    uri = destinationUri,
-    compressFormat = CompressFormat.JPEG,
-    compressQuality = 85
+    destinationUri = destinationUri, // or null for auto-generated temp cache Uri
+    format = CompressFormat.JPEG,
+    quality = 85
 )
 
 // Efficiently decode large image from Uri using inSampleSize to prevent OOM
-val sampledBitmap = BitmapUtils.decodeSampledBitmap(
+val sampledBitmap: Bitmap? = ImageHelper.decodeSampledBitmap(
     context = context,
     uri = imageUri,
     reqWidth = 1024,
