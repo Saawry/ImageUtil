@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/keyline_x2"
+    android:background="@color/white"
+    android:elevation="@dimen/elevation_card_resting"
+    android:orientation="vertical"
+    tools:ignore="Overdraw">
+
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_margin="@dimen/keyline_x2"
+      android:text="@string/rotate"
+      android:textColor="@color/black" />
+
+  <HorizontalScrollView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:scrollbars="none">
+
+    <com.google.android.material.chip.ChipGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/keyline_x2"
+        android:paddingEnd="@dimen/keyline_x2"
+        app:singleLine="true"
+        app:singleSelection="false">
+
+      <com.google.android.material.chip.Chip
+          android:id="@+id/chipRotateRight"
+          style="@style/Widget.MaterialComponents.Chip.Action"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:chipIcon="@drawable/ic_rotate_right_24"
+          android:text="@string/ic_rotate_right_24" />
+
+      <com.google.android.material.chip.Chip
+          android:id="@+id/chipRotateLeft"
+          style="@style/Widget.MaterialComponents.Chip.Action"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:chipIcon="@drawable/ic_rotate_left_24"
+          android:text="@string/ic_rotate_left_24" />
+
+      <com.google.android.material.chip.Chip
+          android:id="@+id/chipFlipHorizontal"
+          style="@style/Widget.MaterialComponents.Chip.Action"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:chipIcon="@drawable/ic_flip_24"
+          android:text="@string/flip_horizontal" />
+
+      <com.google.android.material.chip.Chip
+          android:id="@+id/chipFlipVertical"
+          style="@style/Widget.MaterialComponents.Chip.Action"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:chipIcon="@drawable/ic_flip_24"
+          android:text="@string/flip_vertical" />
+
+    </com.google.android.material.chip.ChipGroup>
+  </HorizontalScrollView>
+</LinearLayout>

@@ -36,7 +36,8 @@ import java.io.File
 open class CropImageActivity :
   AppCompatActivity(),
   CropImageView.OnSetImageUriCompleteListener,
-  CropImageView.OnCropImageCompleteListener {
+  CropImageView.OnCropImageCompleteListener,
+  CropOptionsBottomSheet.Listener {
 
   /** Persist URI image to crop URI if specific permissions are required. */
   private var cropImageUri: Uri? = null
@@ -112,6 +113,7 @@ open class CropImageActivity :
   }
 
   private fun setCustomizations() {
+    binding.cropImageView.setImageCropOptions(cropImageOptions)
     cropImageOptions.activityBackgroundColor.let { activityBackgroundColor ->
       binding.cropImageView.setBackgroundColor(activityBackgroundColor)
     }
@@ -303,17 +305,8 @@ open class CropImageActivity :
     if (cropImageOptions.skipEditing) return true
     menuInflater.inflate(R.menu.crop_image_menu, menu)
 
-    if (!cropImageOptions.allowRotation) {
-      menu.removeItem(R.id.ic_rotate_left_24)
-      menu.removeItem(R.id.ic_rotate_right_24)
-    } else if (cropImageOptions.allowCounterRotation) {
-      menu.findItem(R.id.ic_rotate_left_24).isVisible = true
-    }
-
-    if (!cropImageOptions.allowFlipping) menu.removeItem(R.id.ic_flip_24)
-
     if (cropImageOptions.cropMenuCropButtonTitle != null) {
-      menu.findItem(R.id.crop_image_menu_crop).title =
+      menu.findItem(R.id.crop_image_menu_crop)?.title =
         cropImageOptions.cropMenuCropButtonTitle
     }
 
@@ -321,7 +314,7 @@ open class CropImageActivity :
     try {
       if (cropImageOptions.cropMenuCropButtonIcon != 0) {
         cropIcon = ContextCompat.getDrawable(this, cropImageOptions.cropMenuCropButtonIcon)
-        menu.findItem(R.id.crop_image_menu_crop).icon = cropIcon
+        menu.findItem(R.id.crop_image_menu_crop)?.icon = cropIcon
       }
     } catch (e: Exception) {
       Log.w("AIC", "Failed to read menu crop drawable", e)
@@ -334,18 +327,7 @@ open class CropImageActivity :
     }
 
     if (menuIconColor != 0) {
-      updateMenuItemIconColor(
-        menu,
-        R.id.ic_rotate_left_24,
-        menuIconColor,
-      )
-      updateMenuItemIconColor(
-        menu,
-        R.id.ic_rotate_right_24,
-        menuIconColor,
-      )
-      updateMenuItemIconColor(menu, R.id.ic_flip_24, menuIconColor)
-
+      updateMenuItemIconColor(menu, R.id.crop_image_menu_options, menuIconColor)
       if (cropIcon != null) {
         updateMenuItemIconColor(
           menu,
@@ -362,11 +344,7 @@ open class CropImageActivity :
 
     menuTextColor?.let { menuItemsTextColor ->
       val menuItemIds = listOf(
-        R.id.ic_rotate_left_24,
-        R.id.ic_rotate_right_24,
-        R.id.ic_flip_24,
-        R.id.ic_flip_24_horizontally,
-        R.id.ic_flip_24_vertically,
+        R.id.crop_image_menu_options,
         R.id.crop_image_menu_crop,
       )
       for (itemId in menuItemIds) {
@@ -381,20 +359,8 @@ open class CropImageActivity :
       cropImage()
       true
     }
-    R.id.ic_rotate_left_24 -> {
-      rotateImage(-cropImageOptions.rotationDegrees)
-      true
-    }
-    R.id.ic_rotate_right_24 -> {
-      rotateImage(cropImageOptions.rotationDegrees)
-      true
-    }
-    R.id.ic_flip_24_horizontally -> {
-      cropImageView?.flipImageHorizontally()
-      true
-    }
-    R.id.ic_flip_24_vertically -> {
-      cropImageView?.flipImageVertically()
+    R.id.crop_image_menu_options -> {
+      openCropOptionsBottomSheet()
       true
     }
     android.R.id.home -> {
@@ -402,6 +368,30 @@ open class CropImageActivity :
       true
     }
     else -> super.onOptionsItemSelected(item)
+  }
+
+  /**
+   * Opens the simplified crop options bottom sheet.
+   */
+  open fun openCropOptionsBottomSheet() {
+    CropOptionsBottomSheet.show(supportFragmentManager, cropImageOptions, this)
+  }
+
+  override fun onOptionsApplySelected(options: CropImageOptions) {
+    this.cropImageOptions = options
+    cropImageView?.setImageCropOptions(options)
+  }
+
+  override fun onRotateImage(degrees: Int) {
+    rotateImage(degrees)
+  }
+
+  override fun onFlipImageHorizontally() {
+    cropImageView?.flipImageHorizontally()
+  }
+
+  override fun onFlipImageVertically() {
+    cropImageView?.flipImageVertically()
   }
 
   protected open fun onPickImageResult(resultUri: Uri?) {

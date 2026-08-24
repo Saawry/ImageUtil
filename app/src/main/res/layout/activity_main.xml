@@ -32,17 +32,10 @@
         app:layout_constraintTop_toBottomOf="@+id/result_image">
 
         <Button
-            android:id="@+id/btn_basic_crop"
+            android:id="@+id/btn_crop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/basic_cropper"
-            android:layout_marginBottom="12dp" />
-
-        <Button
-            android:id="@+id/btn_advance_crop"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/advance_cropper" />
+            android:text="@string/crop_options" />
 
     </LinearLayout>
 

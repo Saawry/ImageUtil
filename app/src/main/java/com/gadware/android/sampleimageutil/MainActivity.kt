@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.gadware.android.cropimage.CropImage
 import com.gadware.android.cropimage.CropImageActivity
 import com.gadware.android.cropimage.CropImageOptions
-import com.gadware.android.cropimage.SampleCustomActivity
 import com.gadware.android.cropimage.parcelable
 import com.gadware.android.sampleimageutil.databinding.ActivityMainBinding
 
@@ -42,38 +41,24 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // The image cropper internally handles all required permissions (Camera / Gallery / Media)
-        binding.btnBasicCrop.setOnClickListener {
-            startImageCropper(isAdvanced = false)
-        }
-
-        binding.btnAdvanceCrop.setOnClickListener {
-            startImageCropper(isAdvanced = true)
+        binding.btnCrop.setOnClickListener {
+            startImageCropper()
         }
     }
 
-    private fun startImageCropper(isAdvanced: Boolean) {
-        val targetClass = if (isAdvanced) {
-            SampleCustomActivity::class.java
-        } else {
-            CropImageActivity::class.java
-        }
-
-        val intent = Intent(this, targetClass)
+    private fun startImageCropper() {
+        val intent = Intent(this, CropImageActivity::class.java)
         val bundle = Bundle()
 
         // Configure cropping options
         val options = CropImageOptions(
-            // Allow rotation, flipping, etc.
-            allowRotation = true,
-            allowFlipping = true,
-
-            // Set aspect ratio
+            // Set initial aspect ratio
             aspectRatioX = 1,
             aspectRatioY = 1,
             fixAspectRatio = true,
 
             // Customize UI elements
-            activityTitle = if (isAdvanced) getString(R.string.advance_cropper) else getString(R.string.basic_cropper),
+            activityTitle = getString(R.string.basic_cropper),
             cropMenuCropButtonTitle = getString(R.string.done),
             activityMenuIconColor = Color.WHITE,
             toolbarColor = Color.BLACK,

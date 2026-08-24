@@ -1,15 +1,16 @@
 # ImageCropper Android Module Usage Guide
 
 This document outlines how to integrate and use the `ImageCropper` (`ImageUtil`) module in your Android project. This module provides a complete suite for:
-1. **Zero-Boilerplate Image Cropping**:
-   - **Basic Cropper (`CropImageActivity`)**: Ready-to-use activity with material toolbar, rotate, flip, and crop actions.
-   - **Advance Cropper (`CustomActivity` / `SampleCustomActivity`)**: Extended custom activity with real-time crop metrics, dynamic rotation counter, and interactive bottom sheet (`SampleOptionsBottomSheet`).
+1. **Zero-Boilerplate Image Cropping (`CropImageActivity`)**:
+   - Built-in Material toolbar with "Done/Crop" action and an interactive **Options Bottom Sheet** (supporting Aspect Ratios: Free, 1:1, 2:1, 4:3, 16:9; Shapes: Rectangle & Oval; Guidelines; Rotate 90° / -90°; Flip Horizontal / Vertical).
    - **Automatic Oval / Circular Transparency**: Cropping in `CropShape.OVAL` automatically masks the output to a transparent oval/circular image (PNG).
 2. **Automatic Internal Permission Handling**:
    - The cropper automatically handles camera and media/storage permissions internally across all Android versions (Android 14+, Android 13, and Android 6–12). No manual permission requests are required from the caller before launching.
-3. **Universal Permission Helper**:
+3. **Ratio-Preserving Image Conversions (`ImageHelper`)**:
+   - Specialized conversion functions (`toByteArrayPreserveRatio`) for saving 16:9, 2:1, 4:3, and Free-scale cropped images to databases (Room/SQLite) or network payloads without distortion or stretching.
+4. **Universal Permission Helper**:
    - Standalone lifecycle-safe, OS-version-aware permission manager for any Android permissions in your app.
-4. **Image Conversion & Compression**:
+5. **Image Conversion & Compression**:
    - Fast utilities for `Bitmap`, `ByteArray`, `Uri` conversion, downsampling, and quality compression.
 
 ---
@@ -32,7 +33,7 @@ This document outlines how to integrate and use the `ImageCropper` (`ImageUtil`)
 2. In your **app module's `build.gradle.kts`**, add the dependency:
    ```kotlin
    dependencies {
-       implementation("com.github.Saawry:ImageUtil:1.4.0")
+       implementation("com.github.Saawry:ImageUtil:1.5.0")
    }
    ```
 
@@ -72,15 +73,9 @@ Ensure your `AndroidManifest.xml` includes the necessary permissions and activit
 
     <application ...>
         
-        <!-- Basic Cropper Activity -->
+        <!-- Cropper Activity -->
         <activity
             android:name="com.gadware.android.cropimage.CropImageActivity"
-            android:theme="@style/Theme.CropImage.Activity"
-            android:exported="true" />
-
-        <!-- Advance Cropper Activity -->
-        <activity
-            android:name="com.gadware.android.cropimage.SampleCustomActivity"
             android:theme="@style/Theme.CropImage.Activity"
             android:exported="true" />
 
@@ -103,7 +98,7 @@ Ensure your `AndroidManifest.xml` includes the necessary permissions and activit
 
 ## 2. Launching the Image Cropper
 
-The image cropper handles its own permission requests internally. You simply launch the intent using the standard Android `ActivityResultContracts.StartActivityForResult()` API.
+The image cropper handles its own permission requests internally. Launch the intent using the standard Android `ActivityResultContracts.StartActivityForResult()` API.
 
 ### 2.1. Setting Up the Activity Result Launcher
 
@@ -118,8 +113,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.gadware.android.cropimage.CropImage
 import com.gadware.android.cropimage.CropImageActivity
 import com.gadware.android.cropimage.CropImageOptions
-import com.gadware.android.cropimage.CustomActivity
-import com.gadware.android.cropimage.SampleCustomActivity
+import com.gadware.android.cropimage.ImageHelper
 import com.gadware.android.cropimage.parcelable
 
 class MainActivity : AppCompatActivity() {
@@ -128,8 +122,18 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             val cropResult = result.data?.parcelable<CropImage.ActivityResult>(CropImage.CROP_IMAGE_EXTRA_RESULT)
             cropResult?.let {
-                // Access cropped image content URI (transparent if cropped in oval shape)
                 val croppedUri: Uri? = it.uriContent
+
+                // Case A: Save to database (preserves 16:9, 2:1, 1:1, Free scale without distortion)
+                val dbBytes: ByteArray? = ImageHelper.toByteArrayPreserveRatio(
+                    context = this,
+                    uri = croppedUri!!,
+                    maxDimension = 800,
+                    format = Bitmap.CompressFormat.JPEG,
+                    ratio = 75
+                )
+
+                // Case B: High-res UI display
                 binding.resultImage.setImageURI(croppedUri)
             }
         } else if (result.resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
@@ -139,25 +143,21 @@ class MainActivity : AppCompatActivity() {
     }
 ```
 
-### 2.2. Launching Basic Cropper (`CropImageActivity`)
+### 2.2. Launching `CropImageActivity`
 
 ```kotlin
-    fun startBasicCropper(sourceUri: Uri? = null) {
+    fun startImageCropper(sourceUri: Uri? = null) {
         val intent = Intent(this, CropImageActivity::class.java)
         val bundle = Bundle()
 
-        // 1. (Optional) Provide existing image Uri to crop directly
+        // 1. (Optional) Provide existing image Uri to crop directly, or null to open source picker
         sourceUri?.let {
             bundle.putParcelable(CropImage.CROP_IMAGE_EXTRA_SOURCE, it)
         }
 
-        // 2. Configure options
+        // 2. Configure initial options
         val options = CropImageOptions(
-            // Rotation & Flipping
-            allowRotation = true,
-            allowFlipping = true,
-
-            // Aspect Ratio
+            // Initial Aspect Ratio
             aspectRatioX = 1,
             aspectRatioY = 1,
             fixAspectRatio = true,
@@ -182,36 +182,9 @@ class MainActivity : AppCompatActivity() {
     }
 ```
 
-### 2.3. Launching Advance Cropper (`CustomActivity` / `SampleCustomActivity`)
+### 2.3. Circular / Oval Cropping with Transparency
 
-The **Advance Cropper** provides live aspect ratio chips, shape choices (rectangle, oval, vertical/horizontal only), guidelines, auto-zoom, multi-touch, center move, progress bar toggles, live crop dimension metrics, and automatic transparent oval outputs:
-
-```kotlin
-    fun startAdvanceCropper(sourceUri: Uri? = null) {
-        val intent = Intent(this, CustomActivity::class.java) // or SampleCustomActivity::class.java
-        val bundle = Bundle()
-
-        sourceUri?.let {
-            bundle.putParcelable(CropImage.CROP_IMAGE_EXTRA_SOURCE, it)
-        }
-
-        val options = CropImageOptions(
-            allowRotation = true,
-            allowFlipping = true,
-            showIntentChooser = true,
-            imageSourceIncludeCamera = true,
-            imageSourceIncludeGallery = true
-        )
-
-        bundle.putParcelable(CropImage.CROP_IMAGE_EXTRA_OPTIONS, options)
-        intent.putExtra(CropImage.CROP_IMAGE_EXTRA_BUNDLE, bundle)
-        cropImageLauncher.launch(intent)
-    }
-```
-
-### 2.4. Circular / Oval Cropping with Transparency
-
-When `cropShape` is set to `CropShape.OVAL` (either via options or selected in the Advance bottom sheet), the output image is **automatically transparent** outside the oval/circle boundary and saved as a PNG.
+When `cropShape` is set to `CropShape.OVAL` (configured via options or selected from the in-app bottom sheet), the output image is **automatically transparent** outside the oval/circle boundary and saved as a PNG.
 
 ```kotlin
 val options = CropImageOptions(
@@ -229,7 +202,38 @@ val circularBitmap: Bitmap = CropImage.toOvalBitmap(bitmap)
 
 ---
 
-## 3. Standalone Universal Permission Helper
+## 3. Ratio-Preserving Conversion & Database Storage (`ImageHelper`)
+
+When cropping images with dynamic aspect ratios (e.g. `16:9`, `2:1`, `4:3`, `1:1`, or Free scale), use `toByteArrayPreserveRatio` to reduce image size without distorting or stretching the image:
+
+```kotlin
+// 1. Convert Bitmap for Database/Upload (Longest edge <= 800px, preserves exact 16:9, 2:1, etc.)
+val dbBytes: ByteArray? = ImageHelper.toByteArrayPreserveRatio(
+    bitmap = croppedBitmap,
+    maxDimension = 800, // e.g. 16:9 becomes 800x450, 2:1 becomes 800x400
+    format = Bitmap.CompressFormat.JPEG,
+    ratio = 75
+)
+
+// 2. Convert from Uri directly (Memory-safe downsampling)
+val dbBytesFromUri: ByteArray? = ImageHelper.toByteArrayPreserveRatio(
+    context = context,
+    uri = croppedUri,
+    maxDimension = 800,
+    format = Bitmap.CompressFormat.JPEG,
+    ratio = 75
+)
+
+// 3. Proportional Bitmap resizer
+val scaledBitmap: Bitmap = ImageHelper.scalePreservingRatio(
+    bitmap = croppedBitmap,
+    maxDimension = 800
+)
+```
+
+---
+
+## 4. Standalone Universal Permission Helper
 
 The module includes a standalone, lifecycle-safe permission helper (`com.gadware.android.cropimage.permission.*`) that can be used for **any** runtime permissions in your application:
 
@@ -274,18 +278,7 @@ class MyActivity : AppCompatActivity() {
 
 ---
 
-## 4. Image Conversion & Compression Utilities
-
-### 4.1. Universal Image to ByteArray & Format Conversions (`ImageHelper`)
-
-`ImageHelper.toByteArray` is a universal conversion function supporting **`Bitmap`** or **`Uri`** inputs with optional parameters for **dimensions**, **format**, and **compression ratio**:
-
-* **Dimensions (`width`, `height`)**:
-  * If both are omitted: Defaults to **`200px * 200px`**.
-  * If only one is provided (e.g., `width = 50`): The dimension defaults to a square **`50px * 50px`**.
-  * If both are provided (e.g., `width = 300, height = 400`): Scaled to **`300px * 400px`**.
-* **Format (`format`)**: Defaults to **`Bitmap.CompressFormat.PNG`** (also supports `JPEG`, `WEBP`, etc.).
-* **Compression Ratio / Quality (`ratio`)**: Defaults to **`50`** (integer range `0..100`).
+## 5. Universal Image Conversion Utilities
 
 ```kotlin
 import android.graphics.Bitmap.CompressFormat
@@ -294,13 +287,7 @@ import com.gadware.android.cropimage.ImageHelper
 // 1. Universal converter from Bitmap (defaults: 200x200, PNG, ratio 50)
 val bytesDefault: ByteArray? = ImageHelper.toByteArray(bitmap)
 
-// 2. Single dimension passed (e.g. 50 -> 50px * 50px, PNG, ratio 50)
-val bytesSquare: ByteArray? = ImageHelper.toByteArray(
-    bitmap = bitmap,
-    width = 50 // or height = 50
-)
-
-// 3. Custom dimensions, JPEG format, and custom compression ratio
+// 2. Custom dimensions, JPEG format, and custom compression ratio
 val bytesCustom: ByteArray? = ImageHelper.toByteArray(
     bitmap = bitmap,
     width = 300,
@@ -309,39 +296,26 @@ val bytesCustom: ByteArray? = ImageHelper.toByteArray(
     ratio = 80
 )
 
-// 4. Universal converter from Uri (memory-safe sampled decoding)
+// 3. Universal converter from Uri (memory-safe sampled decoding)
 val bytesFromUri: ByteArray? = ImageHelper.toByteArray(
     context = context,
     uri = imageUri,
-    width = 100, // becomes 100x100
+    width = 100,
     format = CompressFormat.PNG,
     ratio = 50
 )
 
-// 5. Universal entry point for either Bitmap or Uri
+// 4. Universal entry point for either Bitmap or Uri
 val bytesUniversal: ByteArray? = ImageHelper.toByteArrayUniversal(
     image = imageUri, // or bitmap
     context = context,
     width = 50
 )
 
-// 6. Convert ByteArray back to Bitmap
+// 5. Convert ByteArray back to Bitmap
 val bitmap: Bitmap = ImageHelper.toBitmap(bytesDefault!!)
 
-// 7. Downscale Bitmap proportionally (max 300px bound maintaining aspect ratio)
-val scaledBitmap: Bitmap = ImageHelper.getMaxSizeBitmap(bitmap)
-
-// 8. Render any Android View to a Bitmap
-val viewBitmap: Bitmap = ImageHelper.loadBitmapFromView(view, view.width, view.height)
-```
-
-### 4.2. Compression & Large Image Decoding (`ImageHelper`)
-
-```kotlin
-import android.graphics.Bitmap.CompressFormat
-import com.gadware.android.cropimage.ImageHelper
-
-// Compress and save Bitmap to file Uri with format and quality (0..100)
+// 6. Compress and save Bitmap to file Uri
 val savedUri: Uri = ImageHelper.writeBitmapToUri(
     context = context,
     bitmap = bitmap,
@@ -350,11 +324,11 @@ val savedUri: Uri = ImageHelper.writeBitmapToUri(
     quality = 85
 )
 
-// Efficiently decode large image from Uri using inSampleSize to prevent OOM
+// 7. Efficiently decode sampled bitmap without loading large images fully in memory
 val sampledBitmap: Bitmap? = ImageHelper.decodeSampledBitmap(
     context = context,
-    uri = imageUri,
-    reqWidth = 1024,
-    reqHeight = 1024
+    uri = largeImageUri,
+    reqWidth = 400,
+    reqHeight = 400
 )
 ```

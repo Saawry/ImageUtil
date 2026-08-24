@@ -130,6 +130,141 @@ object ImageHelper {
         }
     }
 
+    /**
+     * Calculates proportional dimensions for an image given its original dimensions and a maximum boundary,
+     * strictly preserving the original aspect ratio (whether 1:1, 16:9, 4:3, 2:1, or arbitrary free scale).
+     *
+     * @param origWidth Original image width.
+     * @param origHeight Original image height.
+     * @param maxDimension Maximum allowed dimension (width or height).
+     * @return Pair of scaled (targetWidth, targetHeight).
+     */
+    @JvmStatic
+    fun calculateProportionalDimensions(
+        origWidth: Int,
+        origHeight: Int,
+        maxDimension: Int
+    ): Pair<Int, Int> {
+        if (origWidth <= 0 || origHeight <= 0 || maxDimension <= 0) {
+            return Pair(max(1, origWidth), max(1, origHeight))
+        }
+        val maxOriginal = max(origWidth, origHeight)
+        if (maxOriginal <= maxDimension) {
+            return Pair(origWidth, origHeight)
+        }
+        val scale = maxDimension.toFloat() / maxOriginal
+        val targetWidth = (origWidth * scale).toInt().coerceAtLeast(1)
+        val targetHeight = (origHeight * scale).toInt().coerceAtLeast(1)
+        return Pair(targetWidth, targetHeight)
+    }
+
+    /**
+     * Resizes a [Bitmap] proportionally so that its longest edge is at most [maxDimension],
+     * strictly preserving the aspect ratio (16:9, 2:1, 4:3, 1:1, or free scale).
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun scalePreservingRatio(
+        bitmap: Bitmap,
+        maxDimension: Int = 800
+    ): Bitmap {
+        val (targetW, targetH) = calculateProportionalDimensions(bitmap.width, bitmap.height, maxDimension)
+        return if (bitmap.width == targetW && bitmap.height == targetH) {
+            bitmap
+        } else {
+            Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+        }
+    }
+
+    /**
+     * Converts a [Bitmap] to a compressed [ByteArray] while strictly preserving its original
+     * aspect ratio (e.g. 16:9, 2:1, free) and limiting its maximum dimension to [maxDimension].
+     * Ideal for saving cropped photos to SQLite/Room databases or network uploads.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun toByteArrayPreserveRatio(
+        bitmap: Bitmap,
+        maxDimension: Int = 800,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
+        ratio: Int = 75
+    ): ByteArray? {
+        return try {
+            val (targetW, targetH) = calculateProportionalDimensions(bitmap.width, bitmap.height, maxDimension)
+            val scaledBitmap = if (bitmap.width == targetW && bitmap.height == targetH) {
+                bitmap
+            } else {
+                Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+            }
+
+            val outputStream = ByteArrayOutputStream()
+            val clampedRatio = ratio.coerceIn(0, 100)
+            scaledBitmap.compress(format, clampedRatio, outputStream)
+
+            if (scaledBitmap != bitmap) {
+                scaledBitmap.recycle()
+            }
+            outputStream.toByteArray()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Converts an image [Uri] to a compressed [ByteArray] while preserving its original aspect ratio.
+     * Downsamples memory-safely before loading.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun toByteArrayPreserveRatio(
+        context: Context,
+        uri: Uri,
+        maxDimension: Int = 800,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
+        ratio: Int = 75
+    ): ByteArray? {
+        return try {
+            val decodedBitmap = decodeSampledBitmapFromUri(context, uri, maxDimension, maxDimension) ?: return null
+            val result = toByteArrayPreserveRatio(
+                bitmap = decodedBitmap,
+                maxDimension = maxDimension,
+                format = format,
+                ratio = ratio
+            )
+            decodedBitmap.recycle()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Universal converter accepting either [Bitmap] or [Uri] as input and compressing
+     * to a [ByteArray] while strictly preserving the aspect ratio.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun toByteArrayPreserveRatioUniversal(
+        image: Any,
+        context: Context? = null,
+        maxDimension: Int = 800,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
+        ratio: Int = 75
+    ): ByteArray? {
+        return when (image) {
+            is Bitmap -> toByteArrayPreserveRatio(image, maxDimension, format, ratio)
+            is Uri -> {
+                if (context == null) {
+                    throw IllegalArgumentException("Context must not be null when converting Uri to ByteArray")
+                }
+                toByteArrayPreserveRatio(context, image, maxDimension, format, ratio)
+            }
+            else -> throw IllegalArgumentException("Unsupported image type: ${image::class.java.name}. Expected Bitmap or Uri.")
+        }
+    }
+
     @JvmStatic
     fun getMaxSizeBitmap(image: Bitmap): Bitmap { //int maxSize is 300 here, output 300*300=90000
         var width = image.width
