@@ -60,6 +60,15 @@ open class CropImageActivity :
       onPickImageResult(null)
     }
   }
+
+  private val intentChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityRes ->
+    if (activityRes.resultCode == RESULT_OK) {
+      val uri = activityRes.data?.data ?: latestTmpUri
+      onPickImageResult(uri)
+    } else {
+      setResultCancel()
+    }
+  }
   companion object {
     const val BUNDLE_KEY_TMP_URI = "bundle_key_tmp_uri"
     fun start(activity: Activity) {
@@ -180,38 +189,33 @@ open class CropImageActivity :
   }
 
   private fun showIntentChooser() {
-    val ciIntentChooser = CropImageIntentChooser(
-      activity = this,
-      callback = object : CropImageIntentChooser.ResultCallback {
-        override fun onSuccess(uri: Uri?) {
-          onPickImageResult(uri)
-        }
-
-        override fun onCancelled() {
-          setResultCancel()
-        }
-      },
-    )
-    cropImageOptions.let { options ->
-      options.intentChooserTitle
-        ?.takeIf { title ->
-          title.isNotBlank()
-        }
-        ?.let { icTitle ->
-          ciIntentChooser.setIntentChooserTitle(icTitle)
-        }
-      options.intentChooserPriorityList
-        ?.takeIf { appPriorityList -> appPriorityList.isNotEmpty() }
-        ?.let { appsList ->
-          ciIntentChooser.setupPriorityAppsList(appsList)
-        }
-      val cameraUri: Uri? = if (options.imageSourceIncludeCamera) getTmpFileUri() else null
-      ciIntentChooser.showChooserIntent(
-        includeCamera = options.imageSourceIncludeCamera,
-        includeGallery = options.imageSourceIncludeGallery,
-        cameraImgUri = cameraUri,
-      )
+    val cameraUri: Uri? = if (cropImageOptions.imageSourceIncludeCamera) {
+      getTmpFileUri().also { latestTmpUri = it }
+    } else {
+      null
     }
+    val priorityList = cropImageOptions.intentChooserPriorityList
+      ?.takeIf { it.isNotEmpty() }
+      ?: listOf(
+        CropImageIntentChooser.GOOGLE_PHOTOS,
+        CropImageIntentChooser.GOOGLE_PHOTOS_GO,
+        CropImageIntentChooser.SAMSUNG_GALLERY,
+        CropImageIntentChooser.ONEPLUS_GALLERY,
+        CropImageIntentChooser.MIUI_GALLERY,
+      )
+    val chooserTitle = cropImageOptions.intentChooserTitle
+      ?.takeIf { it.isNotBlank() }
+      ?: getString(R.string.pick_image_chooser_title)
+
+    val chooserIntent = CropImageIntentChooser.createChooserIntent(
+      context = this,
+      title = chooserTitle,
+      priorityIntentList = priorityList,
+      includeCamera = cropImageOptions.imageSourceIncludeCamera,
+      includeGallery = cropImageOptions.imageSourceIncludeGallery,
+      cameraImgUri = cameraUri,
+    )
+    intentChooserLauncher.launch(chooserIntent)
   }
 
   private fun openSource(source: Source) {

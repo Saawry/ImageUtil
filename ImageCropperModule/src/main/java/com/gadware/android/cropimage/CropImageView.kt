@@ -647,12 +647,18 @@ class CropImageView @JvmOverloads constructor(
         ).bitmap
       }
 
-      return BitmapUtils.resizeBitmap(
+      val resizedBitmap = BitmapUtils.resizeBitmap(
         bitmap = croppedBitmap,
         reqWidth = newReqWidth,
         reqHeight = newReqHeight,
         options = options,
       )
+
+      return if (mCropOverlayView.cropShape == CropShape.OVAL) {
+        CropImage.toOvalBitmap(resizedBitmap)
+      } else {
+        resizedBitmap
+      }
     }
 
     return null
@@ -1071,6 +1077,7 @@ class CropImageView @JvmOverloads constructor(
               saveCompressFormat = saveCompressFormat,
               saveCompressQuality = saveCompressQuality,
               customOutputUri = customOutputUri ?: this.customOutputUri,
+              cropShape = mCropOverlayView.cropShape ?: CropShape.RECTANGLE,
           ),
       )
 
