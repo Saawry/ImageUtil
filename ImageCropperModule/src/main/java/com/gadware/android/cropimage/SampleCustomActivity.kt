@@ -101,3 +101,6 @@ open class SampleCustomActivity : CropImageActivity(), SampleOptionsBottomSheet.
     binding.cropImageView.setImageCropOptions(options)
   }
 }
+
+typealias CustomActivity = SampleCustomActivity
+

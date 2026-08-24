@@ -32,6 +32,7 @@ internal class BitmapCroppingWorkerJob(
   private val saveCompressFormat: Bitmap.CompressFormat,
   private val saveCompressQuality: Int,
   private val customOutputUri: Uri?,
+  private val cropShape: CropImageView.CropShape = CropImageView.CropShape.RECTANGLE,
 ) : CoroutineScope {
   private var job: Job = Job()
 
@@ -92,18 +93,30 @@ internal class BitmapCroppingWorkerJob(
             options = options,
           )
 
+          val finalBitmap = if (cropShape == CropImageView.CropShape.OVAL) {
+            CropImage.toOvalBitmap(resizedBitmap)
+          } else {
+            resizedBitmap
+          }
+
+          val finalCompressFormat = if (cropShape == CropImageView.CropShape.OVAL && saveCompressFormat == Bitmap.CompressFormat.JPEG) {
+            Bitmap.CompressFormat.PNG
+          } else {
+            saveCompressFormat
+          }
+
           launch(Dispatchers.IO) {
             val newUri = BitmapUtils.writeBitmapToUri(
               context = context,
-              bitmap = resizedBitmap,
-              compressFormat = saveCompressFormat,
+              bitmap = finalBitmap,
+              compressFormat = finalCompressFormat,
               compressQuality = saveCompressQuality,
               customOutputUri = customOutputUri,
             )
 
             onPostExecute(
               Result(
-                bitmap = resizedBitmap,
+                bitmap = finalBitmap,
                 uri = newUri,
                 sampleSize = bitmapSampled.sampleSize,
                 error = null,

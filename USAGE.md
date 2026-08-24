@@ -1,9 +1,10 @@
 # ImageCropper Android Module Usage Guide
 
-This document outlines how to integrate and use the `ImageCropper` module in your Android project. This module provides a complete suite for:
+This document outlines how to integrate and use the `ImageCropper` (`ImageUtil`) module in your Android project. This module provides a complete suite for:
 1. **Zero-Boilerplate Image Cropping**:
    - **Basic Cropper (`CropImageActivity`)**: Ready-to-use activity with material toolbar, rotate, flip, and crop actions.
-   - **Advance Cropper (`SampleCustomActivity`)**: Extended custom activity with real-time crop metrics, dynamic rotation counter, and interactive bottom sheet (`SampleOptionsBottomSheet`).
+   - **Advance Cropper (`CustomActivity` / `SampleCustomActivity`)**: Extended custom activity with real-time crop metrics, dynamic rotation counter, and interactive bottom sheet (`SampleOptionsBottomSheet`).
+   - **Automatic Oval / Circular Transparency**: Cropping in `CropShape.OVAL` automatically masks the output to a transparent oval/circular image (PNG).
 2. **Automatic Internal Permission Handling**:
    - The cropper automatically handles camera and media/storage permissions internally across all Android versions (Android 14+, Android 13, and Android 6–12). No manual permission requests are required from the caller before launching.
 3. **Universal Permission Helper**:
@@ -15,7 +16,27 @@ This document outlines how to integrate and use the `ImageCropper` module in you
 
 ## 1. Module Integration
 
-### 1.1. Add Module Dependency
+### 1.1. Add Dependency via JitPack (Recommended for Published Library)
+
+1. In your **`settings.gradle.kts`**, add the JitPack repository:
+   ```kotlin
+   dependencyResolutionManagement {
+       repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+       repositories {
+           google()
+           mavenCentral()
+           maven { url = uri("https://jitpack.io") }
+       }
+   }
+   ```
+2. In your **app module's `build.gradle.kts`**, add the dependency:
+   ```kotlin
+   dependencies {
+       implementation("com.github.Saawry:ImageUtil:1.4.0")
+   }
+   ```
+
+### 1.2. Or Add as Local Module Dependency
 
 1. In your project's **`settings.gradle.kts`**, include the module:
    ```kotlin
@@ -28,7 +49,7 @@ This document outlines how to integrate and use the `ImageCropper` module in you
    }
    ```
 
-### 1.2. Manifest Configuration
+### 1.3. Manifest Configuration
 
 Ensure your `AndroidManifest.xml` includes the necessary permissions and activity/provider declarations:
 
@@ -97,6 +118,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.gadware.android.cropimage.CropImage
 import com.gadware.android.cropimage.CropImageActivity
 import com.gadware.android.cropimage.CropImageOptions
+import com.gadware.android.cropimage.CustomActivity
 import com.gadware.android.cropimage.SampleCustomActivity
 import com.gadware.android.cropimage.parcelable
 
@@ -106,7 +128,7 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             val cropResult = result.data?.parcelable<CropImage.ActivityResult>(CropImage.CROP_IMAGE_EXTRA_RESULT)
             cropResult?.let {
-                // Access cropped image content URI
+                // Access cropped image content URI (transparent if cropped in oval shape)
                 val croppedUri: Uri? = it.uriContent
                 binding.resultImage.setImageURI(croppedUri)
             }
@@ -160,13 +182,13 @@ class MainActivity : AppCompatActivity() {
     }
 ```
 
-### 2.3. Launching Advance Cropper (`SampleCustomActivity`)
+### 2.3. Launching Advance Cropper (`CustomActivity` / `SampleCustomActivity`)
 
-The **Advance Cropper** provides live aspect ratio chips, shape choices (rectangle, oval, vertical/horizontal only), guidelines, auto-zoom, multi-touch, center move, progress bar toggles, and live crop dimension metrics:
+The **Advance Cropper** provides live aspect ratio chips, shape choices (rectangle, oval, vertical/horizontal only), guidelines, auto-zoom, multi-touch, center move, progress bar toggles, live crop dimension metrics, and automatic transparent oval outputs:
 
 ```kotlin
     fun startAdvanceCropper(sourceUri: Uri? = null) {
-        val intent = Intent(this, SampleCustomActivity::class.java)
+        val intent = Intent(this, CustomActivity::class.java) // or SampleCustomActivity::class.java
         val bundle = Bundle()
 
         sourceUri?.let {
@@ -187,6 +209,24 @@ The **Advance Cropper** provides live aspect ratio chips, shape choices (rectang
     }
 ```
 
+### 2.4. Circular / Oval Cropping with Transparency
+
+When `cropShape` is set to `CropShape.OVAL` (either via options or selected in the Advance bottom sheet), the output image is **automatically transparent** outside the oval/circle boundary and saved as a PNG.
+
+```kotlin
+val options = CropImageOptions(
+    cropShape = CropImageView.CropShape.OVAL,
+    fixAspectRatio = true,
+    aspectRatioX = 1,
+    aspectRatioY = 1,
+)
+```
+
+You can also manually convert any Bitmap to a circular transparent Bitmap using:
+```kotlin
+val circularBitmap: Bitmap = CropImage.toOvalBitmap(bitmap)
+```
+
 ---
 
 ## 3. Standalone Universal Permission Helper
@@ -200,7 +240,7 @@ import com.gadware.android.cropimage.permission.registerPermissionHelper
 
 class MyActivity : AppCompatActivity() {
 
-    // Register helper during Activity/Fragment creation
+    // Register helper during Activity/Fragment creation (before STARTED state)
     private val permissionHelper = registerPermissionHelper()
 
     private fun checkCustomPermissions() {
